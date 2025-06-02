@@ -25,6 +25,30 @@ class Book extends Model
         return $query->where('title', 'LIKE', "%{$title}%");
     }
 
+    /**
+     * Returns the average rating of a book during a certain time
+     *
+     * @param Builder $query
+     * @param mixed $from
+     * @param mixed $to
+     * @return Builder
+     */
+    public function scopeWithAvgRating(Builder $query, mixed $from = null, mixed $to = null): Builder{
+        return $query->withAvg(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)], 'rating');
+    }
+
+    /**
+     * Returns the number of reviews of a book during a certain time
+     *
+     * @param Builder $query
+     * @param mixed $from
+     * @param mixed $to
+     * @return Builder
+     */
+    public function scopeWithReviewsCount(Builder $query, mixed $from = null, mixed $to = null): Builder{
+        return $query->withCount(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)]);
+    }
+
      /**
       * Returns the best rated books ranked from best to worst. Includes only books with 10 on more reviews.
       *
@@ -35,7 +59,7 @@ class Book extends Model
       * @return Builder
       */
     public function scopeBestRated(Builder $query, mixed $from = null, mixed $to = null, int $minimum = 10): Builder{
-        return $query->withCount(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)])->withAvg(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)], 'rating')->having('reviews_count', '>=', $minimum)->orderBy('reviews_avg_rating', 'desc');
+        return $query->withReviewsCount($from, $to)->withAvgRating($from, $to)->having('reviews_count', '>=', $minimum)->orderBy('reviews_avg_rating', 'desc');
     }
 
     /**
@@ -47,7 +71,7 @@ class Book extends Model
      * @return Builder
      */
     public function scopeMostPopular(Builder $query, mixed $from = null, mixed $to = null): Builder{
-        return $query->withCount(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)])->withAvg(['reviews' => fn(Builder $q) => $this->applyDateFilters($q, $from, $to)], 'rating')->orderBy('reviews_count', 'desc');
+        return $query->withReviewsCount($from, $to)->having('reviews_count', '>=', 2)->withAvgRating($from, $to)->orderBy('reviews_count', 'desc');
     }
 
     /**
@@ -68,6 +92,10 @@ class Book extends Model
         };
     }
 
-    
+    protected static function booted(){
+        static::updated(fn (Book $book) => cache()->forget("Book:{$book->id}"));
+        static::deleted(fn (Book $book) => cache()->forget("Book:{$book->id}"));
+        static::created(fn (Book $book) => cache()->forget("Book:{$book->id}"));
+    }
 
 }

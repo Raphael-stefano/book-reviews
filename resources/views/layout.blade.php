@@ -35,6 +35,9 @@
                     accordion: true
                 });
             });
+
+            var selectElems = document.querySelectorAll('select');
+            var selectInstances = M.FormSelect.init(selectElems);
         </script>
     </body>
 </html>

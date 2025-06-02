@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Testing')
+@section('title', 'Home')
 
 @section('content')
 
@@ -47,8 +47,6 @@
         </ul>
     </div>
 
-    
-
     @foreach ($books as $book)
         <div class="row">
             <div class="col l10 offset-l1">
@@ -64,26 +62,11 @@
                         <div class="valign-wrapper">
                             <span class="amber-text accent-4">{{ $book->reviews_count }} {{ Str::plural('review', $book->reviews_count) }} - </span>
                             <span class="amber-text accent-4">
-                                @php
-                                    $star = round($book->reviews_avg_rating * 2) / 2;
-                                @endphp
-                                @for ($i = 0; $i < floor($star); $i++)
-                                    <i class="small material-icons amber-text accent-4">star</i>
-                                @endfor
-                                @if (floor($star) != $star)
-                                    <i class="small material-icons amber-text accent-4">star_half</i>
-                                    @for ($i = ceil($star); $i < 5; $i++)
-                                        <i class="small material-icons amber-text accent-4">star_border</i>
-                                    @endfor
-                                @else
-                                    @for ($i = $star; $i < 5; $i++)
-                                        <i class="small material-icons amber-text accent-4">star_border</i>
-                                    @endfor
-                                @endif
+                                <x-star-rating :rating="$book->reviews_avg_rating" size="small" color="amber-text accent-4"/>
                             </span>
                         </div>
                         <div>
-                            <a href="#" style="text-transform: uppercase" class="amber-text accent-4">View Book</a>
+                            <a href="{{ route('books.show', $book) }}" style="text-transform: uppercase" class="amber-text accent-4">View Book</a>
                         </div>
                     </div>
                 </div>

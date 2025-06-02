@@ -8,6 +8,7 @@ use Carbon\Carbon;
 
 class BookController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      */
@@ -17,18 +18,22 @@ class BookController extends Controller
         $title = $request->input('title');
         $filter = $request->input('filter');
 
-        $books = Book::when(
-            $title,
-            fn($query, $title) => $query->title($title)
-        )->when(
-            $filter,
-            function($query) use ($filter) {
-                return $this->applyFilter($query, $filter);
-            }
-        )->when($filter === null || $filter === '', function($query) {
-            return $query->latest()->withCount('reviews')->withAvg('reviews', 'rating');
-        })->get();
+        $cacheKey = "books:{$filter}:{$title}";
         
+        $books = cache()->remember($cacheKey, now()->addHour(), function() use ($title, $filter){
+            return Book::when(
+                $title,
+                fn($query, $title) => $query->title($title)
+            )->when(
+                $filter,
+                function($query) use ($filter) {
+                    return $this->applyFilter($query, $filter);
+                }
+            )->when($filter === null || $filter === '', function($query) {
+                return $query->latest()->withReviewsCount()->withAvgRating();
+            })->get();
+        });
+
         return view('books/index', [
             'books' => $books,
             'filter' => $filter,
@@ -69,9 +74,22 @@ class BookController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Book $book)
     {
-        //
+
+        $cacheKey = "Book:{$book->id}";
+        $book = cache()->remember($cacheKey, now()->addHour(), function() use($book){
+            return $book->load([
+                'reviews' => function($query) {
+                    $query->latest();
+                }
+            ])->loadAvg('reviews', 'rating')
+            ->loadCount('reviews');
+        });
+
+        return view('books/show', [
+            'book' => $book
+        ]);
     }
 
     /**

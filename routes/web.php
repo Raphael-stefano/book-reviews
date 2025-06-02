@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\ReviewController;
 use App\Models\Book;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,5 @@ Route::prefix('books')->as('books.')->group(function () {
 });
 
 // CRUD basic routes united
-Route::resource('books', BookController::class);
+Route::resource('books', BookController::class)->only(['index', 'show']);
+Route::resource('books.reviews', ReviewController::class)->scoped(['review' => 'book'])->only(['create', 'store']);
